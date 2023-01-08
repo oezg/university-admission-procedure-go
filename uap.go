@@ -1,8 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -10,13 +15,62 @@ const (
 	threshold   = 60
 )
 
-func main() {
-	meanScore := getMeanScore()
-	decision := getDecision(meanScore)
-	showResult(decision)
+var (
+	numberApplicants int
+	numberAdmission  int
+	meanScore        float64
+	decision         bool
+	applicants       []Applicant
+)
+
+type Applicant struct {
+	firstName string
+	lastName  string
+	gpa       float64
 }
 
-func showResult(decision bool) {
+func main() {
+	getApplicants()
+	showAdmitted()
+}
+
+func showAdmitted() {
+	fmt.Println("Successful applicants:")
+	sort.Slice(applicants, func(i, j int) bool {
+		if applicants[i].gpa != applicants[j].gpa {
+			return applicants[i].gpa > applicants[j].gpa
+		}
+		if applicants[i].firstName != applicants[j].firstName {
+			return applicants[i].firstName < applicants[j].firstName
+		}
+		return applicants[i].lastName < applicants[j].lastName
+	})
+	for i := 0; i < numberAdmission; i++ {
+		fmt.Printf("%s %s\n", applicants[i].firstName, applicants[i].lastName)
+	}
+}
+
+func getApplicants() {
+	fmt.Scanln(&numberApplicants)
+	fmt.Scanln(&numberAdmission)
+	scanner := bufio.NewScanner(os.Stdin)
+	for i := 0; i < numberApplicants; i++ {
+		scanner.Scan()
+		fields := strings.SplitN(scanner.Text(), " ", 3)
+		point, err := strconv.ParseFloat(fields[2], 64)
+		if err != nil {
+			log.Fatal(err)
+		}
+		newApplicant := Applicant{
+			firstName: fields[0],
+			lastName:  fields[1],
+			gpa:       point,
+		}
+		applicants = append(applicants, newApplicant)
+	}
+}
+
+func showResult() {
 	if decision {
 		fmt.Println("Congratulations, you are accepted!")
 	} else {
@@ -24,7 +78,7 @@ func showResult(decision bool) {
 	}
 }
 
-func getMeanScore() (meanScore float64) {
+func getMeanScore() {
 	var score float64
 	var total float64
 	for i := 0; i < numberExams; i++ {
@@ -36,11 +90,9 @@ func getMeanScore() (meanScore float64) {
 		total += score
 	}
 	meanScore = total / numberExams
-	return
 }
 
-func getDecision(meanScore float64) (decision bool) {
+func getDecision() {
 	fmt.Println(meanScore)
 	decision = meanScore >= threshold
-	return
 }
