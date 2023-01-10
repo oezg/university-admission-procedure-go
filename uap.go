@@ -11,31 +11,65 @@ import (
 )
 
 const (
-	numberExams = 3
-	threshold   = 60
+	filename = "applicants.txt"
 )
 
 var (
-	numberApplicants int
-	numberAdmission  int
-	meanScore        float64
-	decision         bool
-	applicants       []Applicant
+	maxAdmitted     int
+	applicants      []Applicant
+	departmentNames = []string{"Biotech", "Chemistry", "Engineering", "Mathematics", "Physics"}
+	departments     = make(map[string][]Applicant)
 )
 
 type Applicant struct {
-	firstName string
-	lastName  string
-	gpa       float64
+	firstName  string
+	lastName   string
+	gpa        float64
+	priorities [3]string
 }
 
 func main() {
+	getMaxAdmitted()
 	getApplicants()
-	showAdmitted()
+	sortDepartment()
+	sortApplicants(applicants)
+	fillDepartments()
+	showDepartments()
 }
 
-func showAdmitted() {
-	fmt.Println("Successful applicants:")
+func showDepartments() {
+	for _, departmentName := range departmentNames {
+		fmt.Println(departmentName)
+		enrollment := departments[departmentName]
+		sortApplicants(enrollment)
+		for _, student := range enrollment {
+			fmt.Printf("%v %v %.2f\n", student.firstName, student.lastName, student.gpa)
+		}
+		fmt.Println()
+	}
+}
+
+func fillDepartments() {
+	for i := 0; i < 3; i++ {
+		admitPriorityN(i)
+	}
+}
+
+func admitPriorityN(priorityRank int) {
+	k := 0
+	for _, applicant := range applicants {
+		department := applicant.priorities[priorityRank]
+		if len(departments[department]) < maxAdmitted {
+			departments[department] = append(departments[department], applicant)
+		} else {
+			applicants[k] = applicant
+			k++
+		}
+	}
+	applicants = applicants[:k]
+}
+
+func sortApplicants(applicants []Applicant) {
 	sort.Slice(applicants, func(i, j int) bool {
 		if applicants[i].gpa != applicants[j].gpa {
 			return applicants[i].gpa > applicants[j].gpa
@@ -45,54 +79,47 @@ func showAdmitted() {
 		}
 		return applicants[i].lastName < applicants[j].lastName
 	})
-	for i := 0; i < numberAdmission; i++ {
-		fmt.Printf("%s %s\n", applicants[i].firstName, applicants[i].lastName)
+}
+
+func sortDepartment() {
+	sort.Strings(departmentNames)
+	for _, departmentName := range departmentNames {
+		departments[departmentName] = []Applicant{}
+	}
+}
+
+func getMaxAdmitted() {
+	_, err := fmt.Scanln(&maxAdmitted)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
 func getApplicants() {
-	fmt.Scanln(&numberApplicants)
-	fmt.Scanln(&numberAdmission)
-	scanner := bufio.NewScanner(os.Stdin)
-	for i := 0; i < numberApplicants; i++ {
-		scanner.Scan()
-		fields := strings.SplitN(scanner.Text(), " ", 3)
-		point, err := strconv.ParseFloat(fields[2], 64)
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatal("Could not close the file", file)
+		}
+	}(file)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		data := strings.SplitN(line, " ", 6)
+		pointAverage, err := strconv.ParseFloat(data[2], 64)
 		if err != nil {
 			log.Fatal(err)
 		}
 		newApplicant := Applicant{
-			firstName: fields[0],
-			lastName:  fields[1],
-			gpa:       point,
+			firstName:  data[0],
+			lastName:   data[1],
+			gpa:        pointAverage,
+			priorities: [3]string{data[3], data[4], data[5]},
 		}
 		applicants = append(applicants, newApplicant)
 	}
-}
-
-func showResult() {
-	if decision {
-		fmt.Println("Congratulations, you are accepted!")
-	} else {
-		fmt.Println("We regret to inform you that we will not be able to offer you admission.")
-	}
-}
-
-func getMeanScore() {
-	var score float64
-	var total float64
-	for i := 0; i < numberExams; i++ {
-		//fmt.Printf("Please enter the score of exam no. %d:\n", i+1)
-		_, err := fmt.Scanln(&score)
-		if err != nil {
-			log.Fatal("Enter only a number")
-		}
-		total += score
-	}
-	meanScore = total / numberExams
-}
-
-func getDecision() {
-	fmt.Println(meanScore)
-	decision = meanScore >= threshold
 }
