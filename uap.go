@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	filename         = "applicants.txt"
+	filename         = "applicant_list.txt"
 	numberPriorities = 3
 	numberExams      = 5
 )
@@ -38,6 +38,7 @@ func main() {
 }
 
 func getMaxAdmitted() {
+	fmt.Println("Enter the maximum number of students that will be admitted to each department:")
 	_, err := fmt.Scanln(&maxAdmitted)
 	if err != nil {
 		log.Fatal(err)
