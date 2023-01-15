@@ -2,8 +2,8 @@
 
 ## About
 
-It takes a lot of hard work to enroll in the university of your dreams. Although, we tend to dismiss how difficult it is for the university to handle the document volume. 
-In this project, I deal with university applicants. I implement an algorithm to determine which applicants are going to be enrolled. 
+It takes a lot of hard work for a university to select the successful applicants from among competitive candidates, who all want to enroll in the department of their dreams. 
+In this project, I deal with university applicants and implement an algorithm to determine which applicants are going to be enrolled.
 At each stage, the algorithm has gradually become more complex and comprehensive!
 
 ## Stages
