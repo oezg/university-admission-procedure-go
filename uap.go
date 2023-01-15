@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"sort"
 	"strconv"
@@ -13,7 +14,7 @@ import (
 const (
 	filename         = "applicants.txt"
 	numberPriorities = 3
-	numberExams      = 4
+	numberExams      = 5
 )
 
 var (
@@ -65,16 +66,18 @@ func getApplicants() {
 				log.Fatal(err)
 			}
 		}
-		applicant := new(Applicant)
-		applicant.scores = make(map[string]float64, numberExams)
-		applicant.firstName = data[0]
-		applicant.lastName = data[1]
+		applicant := Applicant{
+			firstName:  data[0],
+			lastName:   data[1],
+			scores:     make(map[string]float64, numberExams),
+			priorities: [numberPriorities]string{data[7], data[8], data[9]},
+		}
 		applicant.scores["Physics"] = examScores[0]
 		applicant.scores["Chemistry"] = examScores[1]
 		applicant.scores["Mathematics"] = examScores[2]
 		applicant.scores["Engineering"] = examScores[3]
-		applicant.priorities = [numberPriorities]string{data[6], data[7], data[8]}
-		applicants = append(applicants, *applicant)
+		applicant.scores["Admission"] = examScores[4]
+		applicants = append(applicants, applicant)
 	}
 }
 
@@ -103,20 +106,18 @@ func sortApplicants(applicants []Applicant, department string) {
 }
 
 func getScore(applicant Applicant, department string) float64 {
+	var meanScore float64
 	switch department {
 	case "Biotech":
-		return (applicant.scores["Physics"] + applicant.scores["Chemistry"]) / 2.0
-	case "Chemistry":
-		return applicant.scores[department]
-	case "Engineering":
-		return (applicant.scores[department] + applicant.scores["Mathematics"]) / 2.0
-	case "Mathematics":
-		return applicant.scores[department]
-	case "Physics":
-		return (applicant.scores[department] + applicant.scores["Mathematics"]) / 2.0
+		meanScore = (applicant.scores["Physics"] + applicant.scores["Chemistry"]) / 2.0
+	case "Chemistry", "Mathematics":
+		meanScore = applicant.scores[department]
+	case "Engineering", "Physics":
+		meanScore = (applicant.scores[department] + applicant.scores["Mathematics"]) / 2.0
 	default:
-		return 0
+		meanScore = 0
 	}
+	return math.Max(meanScore, applicant.scores["Admission"])
 }
 
 func admitDepartmentPriorityN(department string, priority int) {
@@ -139,7 +140,12 @@ func saveDepartments() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer file.Close()
+		defer func(file *os.File) {
+			err := file.Close()
+			if err != nil {
+				log.Fatal("Could not close the file", file)
+			}
+		}(file)
 
 		sortApplicants(enrollment, department)
 
